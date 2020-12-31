@@ -1,0 +1,9 @@
+{
+  "CUSTOM_TYPES": {
+    "Address": "AccountId",
+    "LookupSource": "AccountId"
+  },
+  "PROVIDER_SOCKET": "ws://127.0.0.1:9944",
+  "Not_the_PROVIDER_SOCKET": "wss://dev-node.substrate.dev"
+
+}
