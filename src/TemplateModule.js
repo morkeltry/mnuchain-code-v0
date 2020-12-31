@@ -8,6 +8,8 @@ import { TxButton } from './substrate-lib/components';
 // Polkadot-JS utilities for hashing data.
 import { blake2AsHex } from '@polkadot/util-crypto';
 
+import clAdapters from './helpers/clAdapters';
+
 // Our main Proof Of Existence Component which is exported.
 export function Main (props) {
   // Establish an API to talk to our Substrate node.
@@ -35,11 +37,39 @@ export function Main (props) {
     setDigest(hash);
   };
 
+  // Takes our file, and creates a digest using the Blake2 256 hash function.
+  const doChainlinkJob = () => {
+    // Turns the file content to a hexadecimal representation.
+    // console.log(fileReader.result);
+    const jobSpec = JSON.parse(fileReader.result);
+    if (!jobSpec.tasks || !Array.isArray(jobSpec.tasks)) {
+      console.error('Expected a property tasks containing an array. Got: ', jobSpec);
+      return 
+    }
+    console.log(jobSpec.tasks);
+    jobSpec.tasks.reduce( async (retVal, task, idx, arr)=> {
+
+      console.log(idx, arr, task.type, await retVal, task, task.params);
+      const rv = clAdapters[task.type.toLowerCase()](await retVal, task.params);
+      
+      console.log(await rv);
+      return rv
+    }, 'start from index 0 please')
+
+      .then (console.log);
+      
+
+    const hash = blake2AsHex(content, 256);
+    setDigest(hash);
+  };
+
   // Callback function for when a new file is selected.
   const handleFileChosen = (file) => {
     fileReader = new FileReader();
-    fileReader.onloadend = bufferToDigest;
-    fileReader.readAsArrayBuffer(file);
+    // fileReader.onloadend = bufferToDigest;
+    fileReader.onloadend = doChainlinkJob;
+    // fileReader.readAsArrayBuffer(file);
+    fileReader.readAsText(file);
   };
 
   // React hook to update the owner and block number information for a file.
@@ -85,7 +115,7 @@ export function Main (props) {
           <Input
             type='file'
             id='file'
-            label='Your File'
+            label='Your JSON'
             onChange={ e => handleFileChosen(e.target.files[0]) }
           />
           {/* Show this message if the file is available to be claimed */}

@@ -1,0 +1,26 @@
+{
+  "initiators": [
+    {
+      "type": "RunLog",
+      "params": { "address": "0x51DE85B0cD5B3684865ECfEedfBAF12777cd0Ff8" }
+    }
+  ],
+  "tasks": [
+    {
+      "type": "HTTPGet",
+      "confirmations": 0,
+      "params": { "get": "https://bitstamp.net/api/ticker/" }
+    },
+    {
+      "type": "Copy",
+      "params": { "copyPath": [ "last" ] }
+    },
+    {
+      "type": "Multiply",
+      "params": { "times": 100 }
+    }
+  ],
+  "startAt": "2020-02-09T15:13:03Z",
+  "endAt": null,
+  "minPayment": "1000000000000000000"
+}
