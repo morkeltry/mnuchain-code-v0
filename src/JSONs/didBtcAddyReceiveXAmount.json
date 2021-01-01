@@ -1,0 +1,44 @@
+{
+  "initiators": [
+    {
+        "type": "external",
+        "params": {
+            "name": "myexternalservice"
+        }
+    }
+  ],
+  "tasks": [
+    {
+      "type": "HTTPGet",
+      "confirmations": 0,
+      "params": { 
+        "get": "https://chain.api.btc.com/v3/address/ADDRESS/tx",
+        "useCorsAnywhere": false
+      }
+    },
+    {
+      "type": "Copy",
+      "params": { "copyPath": "data.list" }
+    },
+    {
+      "type": "Some",
+      "params": { "which": 1 }
+    },
+    {
+      "type": "Copy",
+      "params": { "copyPath": "inputs" }
+    },
+    {
+      "type": "FindSibling",
+      "params": { 
+        "childPath": "prev_value",
+        "matches": [ ],
+        "returnMany": true,
+        "sibling": "prev_addresses"
+      }
+    }
+  ],
+  "startAt": null,
+  "endAt": null,
+  "minPayment": "1000000000000000000"
+}

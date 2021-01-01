@@ -1,4 +1,18 @@
-# Substrate Front End Template
+# Modified Substrate Front End Template
+
+This frontend fakes running Chainlink jobs. It uses a superset of Chainlink's adapters, which are [described here](https://docs.chain.link/docs/job-specifications). The actual functionality is local and is defined by `clAdapters.js`. A sample job taking parameters is specified by `didBtcAddyReceiveXAmount.js`, as populated by `didBtcAddyReceiveXAmount.json`.
+They are all run fron the frontend, to demonstrate functionality. However, the frontend does connect to a substrate chain, so the results can be updated on a chain with suitable funcationality by calling a caller the chain, using the `.then` method of `doChainlinkJob`.
+
+`TemplateModule.js` is where in React the logic is. The `helpers` and `JSONs` folders have also been added.
+
+## Testing it
+* Install as below
+* In 'Run an oracle job', load `didBtcAddyReceiveXAmount.js`
+* Select the matching populator in the dropdown below that.
+* You must pass parameters to the populator and they must be in valid JSON (no tolerant parsing ;) . The two params provided work to provide a result at the time of commit. The datas ource here is paginated but naively parsed. If this data is out of date, open the output returned from the second run of Copy (logs from line 64) and use the value from `prev_value` to replace the `txAmount`. 
+
+
+## Substrate Front End Template
 
 This template allows you to create a front-end application that connects to a
 [Substrate](https://github.com/paritytech/substrate) node back-end with minimal
@@ -15,7 +29,6 @@ this template was built, visit the
 
 ### Installation
 
-The codebase is installed using [git](https://git-scm.com/) and [yarn](https://yarnpkg.com/). This tutorial assumes you have installed yarn globally prior to installing it within the subdirectories. For the most recent version and how to install yarn, please refer to [yarn](https://yarnpkg.com/) documentation and installation guides. 
 
 ```bash
 # Clone the repository
@@ -29,13 +42,13 @@ yarn install
 You can start the template in development mode to connect to a locally running node
 
 ```bash
-yarn start
+npm run start
 ```
 
 You can also build the app in production mode,
 
 ```bash
-yarn build
+npm run build
 ```
 and open `build/index.html` in your favorite browser.
 
@@ -48,7 +61,7 @@ and finally environment variables, with precedence.
 * `development.json` affects the development environment
 * `test.json` affects the test environment, triggered in `yarn test` command.
 * `production.json` affects the production environment, triggered in
-`yarn build` command.
+`npm run build` command.
 
 Some environment variables are read and integrated in the template `config` object,
 including:

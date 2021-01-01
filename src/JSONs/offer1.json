@@ -1,0 +1,40 @@
+{
+  oracles: {
+    confirmingNodes: [
+      {
+        node: "5Hj8SMzMnXYiXYaXL1FKEVei4NfgriM9ZoMkbkc8g1JzMr9H",
+        jobId: "658a935705db42679de6ad2f6797705c",
+        paramSet: 0
+      },
+      {
+        node: "5GNkWyR2HuYpMBfGocH68143gWbr4sXyTgoGuCDqm1rYQWTj",
+        jobId: "de6ad2f87c6b42679777dc658a937861",
+        paramSet: 1
+      },
+      {
+        node: "5HnASi6smw8G7itpyCNekHVBTFPFa4pFocLE7GCsEXyfaQEe",
+        jobId: "db4267de6ad2f67977b4267977937034f",
+        paramSet: 2
+      },
+    ],
+    threshold: 0.66,
+  },
+  saleAsset: {
+    jobParams: [
+      {
+        wasmHash: "b4ef8a93975e849af30c9002b0467d0a",
+        params: [
+
+        ]
+      },
+      {
+
+      },
+      {
+
+      },
+    ]
+  }
+
+
+}

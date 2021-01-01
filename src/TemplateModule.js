@@ -1,6 +1,6 @@
 // React and Semantic UI elements.
 import React, { useState, useEffect } from 'react';
-import { Form, Input, Grid, Message } from 'semantic-ui-react';
+import { Form, Input, Grid, Message, Select } from 'semantic-ui-react';
 // Pre-built Substrate front-end utilities for connecting to a node
 // and making a transaction.
 import { useSubstrate } from './substrate-lib';
@@ -9,6 +9,7 @@ import { TxButton } from './substrate-lib/components';
 import { blake2AsHex } from '@polkadot/util-crypto';
 
 import clAdapters from './helpers/clAdapters';
+import populators from './JSONs/jobSpecPopulators';
 
 // Our main Proof Of Existence Component which is exported.
 export function Main (props) {
@@ -22,6 +23,18 @@ export function Main (props) {
   const [digest, setDigest] = useState('');
   const [owner, setOwner] = useState('');
   const [block, setBlock] = useState(0);
+  const [unpopulatedJobSpec, setUnpopulatedJobSpec] = useState({});
+  const [jobSpecPopulator, setJobSpecPopulator] = useState(null);
+  const [popParams, setPopParams] = useState('');
+  // const setPopParams = (params)=>{ 
+  //   if (typeof params==='string')
+  //     try {
+  //       params = JSON.parse(params);
+  //     } catch (e) {
+  //       params = {}
+  //     }
+  //   setPopParamsRaw(params) 
+  // };
 
   // Our `FileReader()` which is accessible from our functions below.
   let fileReader;
@@ -37,37 +50,66 @@ export function Main (props) {
     setDigest(hash);
   };
 
-  // Takes our file, and creates a digest using the Blake2 256 hash function.
-  const doChainlinkJob = () => {
-    // Turns the file content to a hexadecimal representation.
+  const quickJsonParse = maybeJson=> {
+    typeof maybeJson !== 'object'
+      ? maybeJson
+      : Array.isArray(maybeJson)
+        ? maybeJson
+        : Object.keys(maybeJson).map (key=>
+            `${key}:${maybeJson[key]}`
+          )
+  }
+
+  const andLog = (anything, msg)=> {
+    if (msg)
+      console.log(msg);
+    console.log(`(${typeof anything})`, anything);
+    // in case of Promise ;)
+    anything && anything.then &&
+      anything.then(console.log);
+    return anything    
+  }
+
+  const doChainlinkJob = (job) => new Promise((resolve, reject)=> {
+    // NB fileReader will only contain result so long as it is live.
     // console.log(fileReader.result);
-    const jobSpec = JSON.parse(fileReader.result);
+    const jobSpec = job || JSON.parse(fileReader.result);
     if (!jobSpec.tasks || !Array.isArray(jobSpec.tasks)) {
       console.error('Expected a property tasks containing an array. Got: ', jobSpec);
       return 
     }
-    console.log(jobSpec.tasks);
-    jobSpec.tasks.reduce( async (retVal, task, idx, arr)=> {
+    const cb=finalVal=> {
+      console.log('Completed the job!', finalVal);
+      resolve(finalVal);
+    }
+    clAdapters.resolve = lastVal=> cb(lastVal);
+    if (jobSpec.tasks[jobSpec.tasks.length-1].type !== 'resolve')
+      jobSpec.tasks.push({ type:'resolve' })
 
-      console.log(idx, arr, task.type, await retVal, task, task.params);
+    console.log(jobSpec.tasks);
+
+    const jst=jobSpec.tasks.reduce( async (retVal, task, idx, arr)=> {
+      if (!clAdapters[task.type.toLowerCase()])
+        console.log('UH OH!');
       const rv = clAdapters[task.type.toLowerCase()](await retVal, task.params);
       
-      console.log(await rv);
-      return rv
+      return andLog(rv, `Returning from ${task.type}(${task.params || ''}):` )
     }, 'start from index 0 please')
-
-      .then (console.log);
-      
 
     const hash = blake2AsHex(content, 256);
     setDigest(hash);
-  };
+  });
 
   // Callback function for when a new file is selected.
   const handleFileChosen = (file) => {
     fileReader = new FileReader();
+    
     // fileReader.onloadend = bufferToDigest;
-    fileReader.onloadend = doChainlinkJob;
+    // fileReader.onloadend = doChainlinkJob;
+    fileReader.onloadend = loadend=>{
+      setUnpopulatedJobSpec(JSON.parse(loadend.target.result)) 
+    };
+
     // fileReader.readAsArrayBuffer(file);
     fileReader.readAsText(file);
   };
@@ -75,16 +117,12 @@ export function Main (props) {
   // React hook to update the owner and block number information for a file.
   useEffect(() => {
     let unsubscribe;
-
-    console.log('Running useEffect');
     
     // Polkadot-JS API query to the `proofs` storage item in our pallet.
     // This is a subscription, so it will always get the latest value,
     // even if it changes.
     api.query.templateModule
-      .proofs(digest, (result) => {
-        console.log('about to setOwner, setBlock');
-        
+      .proofs(digest, (result) => {        
         // Our storage item returns a tuple, which is represented as an array.
         setOwner(result[0].toString());
         setBlock(result[1].toNumber());
@@ -107,7 +145,7 @@ export function Main (props) {
   // The actual UI elements which are returned from our component.
   return (
     <Grid.Column>
-      <h1>Proof Of Existence</h1>
+      <h1>Run an oracle job</h1>
       {/* Show warning or success message if the file is or is not claimed. */}
       <Form success={!!digest && !isClaimed()} warning={isClaimed()}>
         <Form.Field>
@@ -126,6 +164,28 @@ export function Main (props) {
             header='File Digest Claimed'
             list={[digest, `Owner: ${owner}`, `Block: ${block}`]}
           />
+          { populators && Object.keys(populators).length>1 && <>
+            <Select 
+              placeholder="Populate jobSpec JSON template with..."
+              value={ jobSpecPopulator }
+              // onChange={ val => setJobSpecPopulator(val) }
+              onChange={ (event,data)=> { setJobSpecPopulator(data.value) } }
+              options={ Object.keys(populators).map((populator, idx)=>({
+                key: populator,
+                value:  populator,
+                text: populator || 'No params' 
+              })) }
+                
+            >
+            </Select>
+            { jobSpecPopulator &&
+              <Input 
+                placeholder= {`{${populators[jobSpecPopulator].params.join(', ')}}`} 
+                onChange={ (event,data)=> { setPopParams(data.value) } }
+                value= { popParams.length ? popParams : setPopParams(populators[jobSpecPopulator].sampleInput || ' ') }
+              />
+            }  
+          </>}
         </Form.Field>
         {/* Buttons for interacting with the component. */}
         <Form.Field>
@@ -159,6 +219,28 @@ export function Main (props) {
               paramFields: [true]
             }}
           />
+          {/* See what happens, innit. */}
+          <div
+            onClick = { ()=>{ 
+              const populatorFn = populators[jobSpecPopulator].populator;
+              const params=JSON.parse(popParams);
+              doChainlinkJob( populators[jobSpecPopulator].populator(unpopulatedJobSpec, params) );
+            } }
+          >
+            <TxButton          
+              accountPair={accountPair}
+              label='Run job'
+              setStatus={setStatus}
+              type='SIGNED-TX'
+              disabled={ !unpopulatedJobSpec }
+              attrs={{
+                palletRpc: 'templateModule',
+                callable: 'revokeClaim',
+                inputParams: [digest],
+                paramFields: [true]
+              }}
+            />          
+          </div>
         </Form.Field>
         {/* Status message about the transaction. */}
         <div style={{ overflowWrap: 'break-word' }}>{status}</div>
